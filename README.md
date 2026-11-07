@@ -6,7 +6,7 @@ Hasilnya menunjukkan pola prediktif, bukan hubungan sebab akibat. Data berasal d
 
 ## Status
 
-`notebooks/dropout_experiments.ipynb` saat ini mencakup pemeriksaan data, pengeluaran `Course` 171, pembagian data, eksplorasi pada data latih, encoder, dan skor cross-validation baseline Regresi Logistik. Pelatihan seluruh skenario, evaluasi pada data uji, artefak final, dan aplikasi Streamlit menyusul. Langkah mengunduh artefak dan menjalankan aplikasi akan ditambahkan di sini setelah keduanya tersedia.
+`notebooks/dropout_experiments.ipynb` saat ini mencakup pemeriksaan data, pengeluaran `Course` 171, pembagian data, eksplorasi pada data latih, encoder, baseline Regresi Logistik, serta sembilan model skenario A beserta metriknya pada data uji. Skenario B, C, dan D, bootstrap, SHAP, artefak final, dan aplikasi Streamlit menyusul. Langkah mengunduh artefak dan menjalankan aplikasi akan ditambahkan di sini setelah keduanya tersedia.
 
 ## Menjalankan dari clone bersih
 
