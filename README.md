@@ -6,7 +6,7 @@ Hasilnya menunjukkan pola prediktif, bukan hubungan sebab akibat. Data berasal d
 
 ## Status
 
-`notebooks/dropout_experiments.ipynb` saat ini mencakup pemeriksaan data, pengeluaran `Course` 171, pembagian data, eksplorasi pada data latih, encoder, baseline Regresi Logistik, serta 24 model skenario A, B, C, dan D beserta metriknya pada data uji. Bootstrap, SHAP, artefak final, dan aplikasi Streamlit menyusul. Langkah mengunduh artefak dan menjalankan aplikasi akan ditambahkan di sini setelah keduanya tersedia.
+`notebooks/dropout_experiments.ipynb` saat ini mencakup pemeriksaan data, pengeluaran `Course` 171, pembagian data, eksplorasi pada data latih, encoder, 24 model skenario A, B, C, dan D beserta metriknya pada data uji, bootstrap berpasangan, SHAP, jawaban rumusan masalah, dan ekspor artefak. Rilis artefak final dan aplikasi Streamlit menyusul. Langkah mengunduh artefak dan menjalankan aplikasi akan ditambahkan di sini setelah keduanya tersedia.
 
 ## Menjalankan dari clone bersih
 
@@ -22,7 +22,7 @@ unzip -p data/uci.zip data.csv > data/data.csv
 run-notebook
 ```
 
-`run-notebook` menimpa keluaran notebook dan menulis hasilnya ke `artifacts/`. Notebook berhenti dengan pesan jelas jika hash `data.csv` berbeda.
+`run-notebook` menimpa keluaran notebook, lalu menulis hasilnya ke `artifacts/` dan `artifacts.zip`, dalam waktu sekitar 9 menit pada laptop 16 thread. Notebook berhenti dengan pesan jelas jika hash `data.csv` berbeda.
 
 ## Dataset
 
