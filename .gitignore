@@ -1,0 +1,26 @@
+# Nix and local environment
+/.direnv/
+/result
+/result-*
+/.pre-commit-config.yaml
+/.env.local
+/.envrc.local
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Data and artefacts
+/data/
+/artifacts/
+/artifacts.zip
+
+# Local documents, kept out of the public repository
+/docs/
+/PRD.md
+
+# LibreOffice lock files
+.~lock.*#
