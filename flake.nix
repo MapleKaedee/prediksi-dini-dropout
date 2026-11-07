@@ -31,6 +31,7 @@
       python = pkgs.python3.withPackages (
         ps: with ps; [
           joblib
+          matplotlib
           numpy
           pandas
           scikit-learn

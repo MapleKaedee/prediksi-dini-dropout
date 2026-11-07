@@ -69,6 +69,7 @@ Alurnya satu arah: `data/data.csv` diproses `notebooks/dropout_experiments.ipynb
 ## Jebakan yang Sudah Ditemukan
 
 - `data.csv` memakai pemisah `;` dan akhir baris CRLF, dan nama kolom ke-5 diakhiri tab, jadi nama kolom harus di-`strip`.
+- `data.csv` diawali BOM UTF-8. `read_csv` pandas 3.0.4 membuangnya sendiri, tetapi `strip` tidak, jadi notebook menulis `encoding="utf-8-sig"` secara eksplisit.
 - Path pada `AppTest.from_file` dihitung dari file pemanggil, jadi pakai path absolut berbasis `Path(__file__)`.
 - Perintah devshell tidak boleh bernama `test`, karena kalah dengan builtin shell.
 - `ruff` tidak tersedia langsung di shell, dan hanya berjalan melalui `fmt`.

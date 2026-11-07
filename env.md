@@ -27,7 +27,7 @@ Hash `data.csv` harus sama dengan nilai berikut:
 3ef126de5cefff26eb11fbb4237f1a1401cb64b488e2f1d598c23cedeb4c45ae
 ```
 
-Pembangunan pertama mengunduh sekitar 352 MiB, atau 1,4 GiB setelah dibuka. Untuk tetap memakai shell lain secara interaktif, jalankan misalnya `nix develop --command fish`.
+Pembangunan pertama mengunduh sekitar 372 MiB, atau 1,5 GiB setelah dibuka. Untuk tetap memakai shell lain secara interaktif, jalankan misalnya `nix develop --command fish`.
 
 ## Aktivasi otomatis dengan direnv
 
