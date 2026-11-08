@@ -214,3 +214,12 @@ def flag_summary(frame):
         "precision": tp / (tp + fp) if tp + fp else 0.0,
         "recall": tp / (tp + fn) if tp + fn else 0.0,
     }
+
+
+def risk_histogram(frame, statuses=("Dropout", "Enrolled", "Graduate")):
+    """Jumlah mahasiswa per rentang skor 0,1 dan status asli. Tepi 0,5 jatuh tepat pada ambang penandaan."""
+    # round() mencegah 0,3 * 10 terbaca 2,999... sehingga masuk rentang yang salah.
+    index = np.minimum(np.floor(np.round(frame["risk"].to_numpy() * 10, 9)), 9).astype(int)
+    labels = [f"{i / 10:.1f}–{(i + 1) / 10:.1f}" for i in range(10)]
+    counts = pd.crosstab(pd.Categorical(np.array(labels)[index], categories=labels), frame["status"].to_numpy())
+    return counts.reindex(columns=list(statuses), fill_value=0).rename_axis(index="Rentang skor", columns="Status asli")

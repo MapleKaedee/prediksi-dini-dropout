@@ -41,7 +41,7 @@ def test_page_runs_with_warning(page):
 @pytest.mark.parametrize("stage", core.STAGES)
 def test_prediction_gives_a_score(stage, financial):
     app = open_page("views/prediksi.py")
-    app.radio(key="pred_stage").set_value(stage)
+    app.segmented_control(key="pred_stage").set_value(stage)
     app.toggle(key="pred_financial").set_value(financial)
     app = submit(app.run())
     assert not app.exception and not app.error

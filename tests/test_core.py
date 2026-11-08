@@ -151,6 +151,24 @@ def test_priority_summary_matches_metrics():
         assert round(summary["recall"], 6) == expected["recall"], model_id
 
 
+def test_risk_histogram_bins_on_the_threshold():
+    frame = pd.DataFrame({"risk": [0.0, 0.3, 0.499999, 0.5, 0.95, 1.0], "status": ["Graduate"] * 3 + ["Dropout"] * 3})
+    counts = core.risk_histogram(frame)
+    assert counts.loc["0.0–0.1", "Graduate"] == 1 and counts.loc["0.3–0.4", "Graduate"] == 1
+    assert counts.loc["0.4–0.5", "Graduate"] == 1 and counts.loc["0.5–0.6", "Dropout"] == 1
+    assert counts.loc["0.9–1.0", "Dropout"] == 2 and counts.to_numpy().sum() == 6
+
+
+@needs_artifacts
+def test_risk_histogram_matches_flagged_counts():
+    predictions = core.load_json("test_predictions.json")
+    for model_id in core.MODEL_IDS:
+        table = core.priority_table(predictions, model_id)
+        counts = core.risk_histogram(table)
+        assert counts.to_numpy().sum() == 842, model_id
+        assert counts.iloc[5:].to_numpy().sum() == core.flag_summary(table)["flagged"], model_id
+
+
 @needs_artifacts
 def test_scores_of_20_students_match_predictions(models, spec, test_rows):
     predictions = {(entry["model_id"], entry["row_id"]): entry for entry in core.load_json("test_predictions.json")}

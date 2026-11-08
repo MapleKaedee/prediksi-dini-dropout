@@ -2,6 +2,7 @@
 
 import json
 
+import charts
 import core
 import labels
 import loaders
@@ -14,6 +15,7 @@ comparisons = pd.DataFrame(loaders.json_file("comparisons.json"))
 shap_global = pd.DataFrame(loaders.json_file("shap_global.json"))
 ALGORITHM_ORDER = list(labels.ALGORITHMS)
 YES_NO = {True: "Ya", False: "Tidak"}
+SCENARIOS = {True: "Dengan keuangan (A)", False: "Tanpa keuangan (B)"}
 
 
 def three_decimals(columns):
@@ -40,14 +42,43 @@ DIFFERENCE_COLUMNS = three_decimals(["Selisih", "IK 95% bawah", "IK 95% atas"])
 reference = by_id["A_T1_rf"]
 positives = reference["tp"] + reference["fn"]
 resamples = int(comparisons.loc[comparisons["question"] != "D", "resamples"].iloc[0])
+official = core.target_status(metrics, "A")
 
 st.title("Model")
 st.markdown(
-    f"Semua metrik dihitung pada {reference['n_test']} mahasiswa data uji, setelah parameter ditetapkan dari data latih. "
-    f"Mahasiswa ditandai jika skor risiko ≥ {core.THRESHOLD}. PR-AUC adalah metrik utama, dengan patokan terendah "
-    f"{positives / reference['n_test']:.3f}, yaitu proporsi dropout data uji ({positives} dari {reference['n_test']}). "
-    f"Selisih disebut bermakna jika interval kepercayaan 95% dari bootstrap berpasangan ({resamples} ulangan) "
-    f"tidak memuat 0 dan nilai absolutnya minimal {core.MIN_DIFFERENCE}."
+    f"Semua metrik dihitung pada {reference['n_test']} mahasiswa data uji, setelah parameter ditetapkan dari data "
+    f"latih. Mahasiswa ditandai jika skor risiko ≥ {core.THRESHOLD}. PR-AUC adalah metrik utama, dengan patokan "
+    f"terendah {positives / reference['n_test']:.3f}, yaitu proporsi dropout data uji ({positives} dari "
+    f"{reference['n_test']}). Selisih disebut bermakna jika interval kepercayaan 95% dari bootstrap berpasangan "
+    f"({resamples} ulangan) tidak memuat 0 dan nilai absolutnya minimal {core.MIN_DIFFERENCE}."
+)
+
+kpis = st.columns(4)
+kpis[0].metric(
+    "PR-AUC T1, Random Forest A",
+    f"{official['t1_pr_auc']:.3f}",
+    f"{official['t1_pr_auc'] - core.G2_T1_PR_AUC:+.3f} dari target {core.G2_T1_PR_AUC:.2f}",
+    border=True,
+)
+kpis[1].metric(
+    "PR-AUC T2, Random Forest A",
+    f"{official['t2_pr_auc']:.3f}",
+    f"{official['t2_pr_auc'] - core.G2_T2_PR_AUC:+.3f} dari target {core.G2_T2_PR_AUC:.2f}",
+    border=True,
+)
+kpis[2].metric(
+    "Recall T2, Random Forest A",
+    f"{official['t2_recall']:.3f}",
+    f"{official['t2_recall'] - core.G2_T2_RECALL:+.3f} dari target {core.G2_T2_RECALL:.2f}",
+    border=True,
+)
+kpis[3].metric(
+    "Target G2",
+    "Tercapai" if official["g2"] else "Tidak tercapai",
+    f"Tahap paling dini: {official['earliest']}",
+    delta_color="off",
+    delta_arrow="off",
+    border=True,
 )
 
 st.header("RM1: performa per tahap")
@@ -67,31 +98,39 @@ rm1 = pd.DataFrame(
         "PR-AUC CV latih": [entry["cv_pr_auc"] for entry in scenario_a],
     }
 )
+left, right = st.columns(2, gap="large")
+with left:
+    st.markdown("**PR-AUC per tahap**")
+    st.line_chart(rm1, x="Tahap", y="PR-AUC", color="Algoritma")
+with right:
+    st.markdown("**Recall per tahap**")
+    st.bar_chart(rm1, x="Tahap", y="Recall", color="Algoritma", stack=False)
 st.dataframe(
     rm1,
     hide_index=True,
     column_config=three_decimals(["PR-AUC", "Recall", "Presisi", "F1", "ROC-AUC", "PR-AUC CV latih"]),
 )
-st.bar_chart(rm1, x="Tahap", y="PR-AUC", color="Algoritma", stack=False)
-st.caption("Grafik memakai kolom PR-AUC pada tabel di atas. Skenario A memakai atribut keuangan.")
+st.caption("Kedua grafik memakai kolom pada tabel di atas. Skenario A memakai atribut keuangan.")
 
 rm1_comparisons = comparisons[comparisons["question"] == "RM1"]
-st.subheader("Random Forest dibanding algoritma lain")
-st.dataframe(
-    comparison_table(rm1_comparisons[~rm1_comparisons["stage"].str.contains("-")]),
-    hide_index=True,
-    column_config=DIFFERENCE_COLUMNS,
-)
-st.subheader("Tahap berikutnya dibanding tahap sebelumnya")
-st.dataframe(
-    comparison_table(rm1_comparisons[rm1_comparisons["stage"].str.contains("-")]),
-    hide_index=True,
-    column_config=DIFFERENCE_COLUMNS,
-)
+left, right = st.columns(2, gap="large")
+with left:
+    st.markdown("**Random Forest dibanding algoritma lain**")
+    st.dataframe(
+        comparison_table(rm1_comparisons[~rm1_comparisons["stage"].str.contains("-")]),
+        hide_index=True,
+        column_config=DIFFERENCE_COLUMNS,
+    )
+with right:
+    st.markdown("**Tahap berikutnya dibanding tahap sebelumnya**")
+    st.dataframe(
+        comparison_table(rm1_comparisons[rm1_comparisons["stage"].str.contains("-")]),
+        hide_index=True,
+        column_config=DIFFERENCE_COLUMNS,
+    )
 
 st.subheader("Target G2 dan tahap paling dini")
 statuses = [core.target_status(metrics, scenario) for scenario in "AB"]
-official = statuses[0]
 st.markdown(
     f"Random Forest skenario A: target G2 **{'tercapai' if official['g2'] else 'tidak tercapai'}**. "
     f"Tahap paling dini yang memenuhi target: **{official['earliest']}**."
@@ -132,6 +171,17 @@ rm2_table = pd.DataFrame(
     }
 )
 rm2_table = pd.concat([rm2_table, comparison_table(rm2).drop(columns="Perbandingan").reset_index(drop=True)], axis=1)
+forest = rm2_table[rm2_table["Algoritma"] == labels.ALGORITHMS["rf"]]
+left, right = st.columns(2, gap="large")
+with left:
+    st.markdown("**PR-AUC Random Forest dengan dan tanpa keuangan**")
+    pair = forest.rename(
+        columns={"PR-AUC dengan keuangan (A)": SCENARIOS[True], "PR-AUC tanpa keuangan (B)": SCENARIOS[False]}
+    ).melt(id_vars="Tahap", value_vars=list(SCENARIOS.values()), var_name="Skenario", value_name="PR-AUC")
+    st.bar_chart(pair, x="Tahap", y="PR-AUC", color="Skenario", stack=False)
+with right:
+    st.markdown("**Selisih PR-AUC A − B per algoritma**")
+    st.bar_chart(rm2_table, x="Tahap", y="Selisih", color="Algoritma", stack=False)
 st.dataframe(
     rm2_table,
     hide_index=True,
@@ -148,63 +198,80 @@ c_table = pd.DataFrame(
     }
 )
 c_table = pd.concat([c_table, comparison_table(scenario_c).drop(columns="Perbandingan").reset_index(drop=True)], axis=1)
-st.dataframe(c_table, hide_index=True, column_config=DIFFERENCE_COLUMNS | three_decimals(["PR-AUC"]))
-st.caption(
-    f"Selisih adalah PR-AUC A_T1_rf ({by_id['A_T1_rf']['pr_auc']:.3f}) dikurangi PR-AUC model tanpa atribut itu."
-)
+left, right = st.columns(2, gap="large")
+with left:
+    st.markdown("**Selisih PR-AUC terhadap A_T1_rf**")
+    st.altair_chart(charts.bars(c_table, "Atribut yang dihapus", "Selisih"))
+with right:
+    st.dataframe(c_table, hide_index=True, column_config=DIFFERENCE_COLUMNS | three_decimals(["PR-AUC"]))
+    st.caption(
+        f"Selisih adalah PR-AUC A_T1_rf ({by_id['A_T1_rf']['pr_auc']:.3f}) dikurangi PR-AUC model tanpa atribut itu."
+    )
 
 st.header("RM3: atribut paling berpengaruh")
 st.markdown(
     "Lima atribut dengan rata-rata nilai absolut SHAP terbesar pada data uji, untuk Random Forest. "
     "Nilai kolom one-hot dijumlahkan ke atribut asalnya per mahasiswa sebelum dirata-ratakan."
 )
-for stage in core.STAGES:
+for tab, stage in zip(st.tabs([labels.STAGES[stage] for stage in core.STAGES]), core.STAGES):
     tops = {
         financial: shap_global[
             (shap_global["model_id"] == core.model_id(stage, financial)) & (shap_global["rank"] <= 5)
         ]
         .sort_values("rank")
         .reset_index(drop=True)
+        .assign(Atribut=lambda frame: frame["attribute"].map(labels.name))
+        .rename(columns={"mean_abs_shap": "Rata-rata |SHAP|"})
         for financial in (True, False)
     }
-    st.markdown(f"**{labels.STAGES[stage]}**")
-    st.dataframe(
-        pd.DataFrame(
-            {
-                "Peringkat": tops[True]["rank"],
-                "Dengan keuangan (A)": tops[True]["attribute"].map(labels.name),
-                "Rata-rata |SHAP| A": tops[True]["mean_abs_shap"],
-                "Tanpa keuangan (B)": tops[False]["attribute"].map(labels.name),
-                "Rata-rata |SHAP| B": tops[False]["mean_abs_shap"],
-            }
-        ),
-        hide_index=True,
-        column_config=three_decimals(["Rata-rata |SHAP| A", "Rata-rata |SHAP| B"]),
-    )
+    with tab:
+        columns = st.columns(2, gap="large")
+        for column, financial in zip(columns, (True, False)):
+            with column:
+                st.markdown(f"**{SCENARIOS[financial]}**")
+                st.altair_chart(charts.bars(tops[financial], "Atribut", "Rata-rata |SHAP|"))
+        st.dataframe(
+            pd.DataFrame(
+                {
+                    "Peringkat": tops[True]["rank"],
+                    SCENARIOS[True]: tops[True]["Atribut"],
+                    "Rata-rata |SHAP| A": tops[True]["Rata-rata |SHAP|"],
+                    SCENARIOS[False]: tops[False]["Atribut"],
+                    "Rata-rata |SHAP| B": tops[False]["Rata-rata |SHAP|"],
+                }
+            ),
+            hide_index=True,
+            column_config=three_decimals(["Rata-rata |SHAP| A", "Rata-rata |SHAP| B"]),
+        )
 
 st.header("Pembanding tanpa Enrolled (skenario D)")
 scenario_d = comparisons[comparisons["question"] == "D"]
 d_reference = by_id[scenario_d["left"].iloc[0]]
-st.dataframe(
-    pd.DataFrame(
-        {
-            "Tahap": scenario_d["stage"],
-            "ROC-AUC D": [by_id[left]["roc_auc"] for left in scenario_d["left"]],
-            "ROC-AUC A": [by_id[right]["roc_auc"] for right in scenario_d["right"]],
-            "Selisih D − A": scenario_d["difference"],
-        }
-    ),
-    hide_index=True,
-    column_config=three_decimals(["ROC-AUC D", "ROC-AUC A", "Selisih D − A"]),
+d_table = pd.DataFrame(
+    {
+        "Tahap": scenario_d["stage"].to_list(),
+        "ROC-AUC D": [by_id[left]["roc_auc"] for left in scenario_d["left"]],
+        "ROC-AUC A": [by_id[right]["roc_auc"] for right in scenario_d["right"]],
+        "Selisih D − A": scenario_d["difference"].to_list(),
+    }
 )
-st.caption(
-    f"Skenario D membuang mahasiswa Enrolled dari data latih dan uji ({d_reference['n_test']} baris uji, "
-    f"{(d_reference['tp'] + d_reference['fn']) / d_reference['n_test'] * 100:.1f}% dropout), seperti banyak penelitian "
-    "terdahulu. Baris ujinya berbeda dari skenario A, jadi selisih ini tidak di-bootstrap dan hanya menjadi pembanding "
-    "dengan literatur."
-)
+left, right = st.columns(2, gap="large")
+with left:
+    st.markdown("**ROC-AUC Random Forest, skenario D dan A**")
+    pair = d_table.melt(
+        id_vars="Tahap", value_vars=["ROC-AUC D", "ROC-AUC A"], var_name="Skenario", value_name="ROC-AUC"
+    )
+    st.bar_chart(pair, x="Tahap", y="ROC-AUC", color="Skenario", stack=False)
+with right:
+    st.dataframe(d_table, hide_index=True, column_config=three_decimals(["ROC-AUC D", "ROC-AUC A", "Selisih D − A"]))
+    st.caption(
+        f"Skenario D membuang mahasiswa Enrolled dari data latih dan uji ({d_reference['n_test']} baris uji, "
+        f"{(d_reference['tp'] + d_reference['fn']) / d_reference['n_test'] * 100:.1f}% dropout), seperti banyak "
+        "penelitian terdahulu. Baris ujinya berbeda dari skenario A, jadi selisih ini tidak di-bootstrap dan hanya "
+        "menjadi pembanding dengan literatur."
+    )
 
-with st.expander(f"Parameter terbaik tiap model ({len(metrics)} model)"):
+with st.expander(f"Parameter terbaik tiap model ({len(metrics)} model)", icon=":material/tune:"):
     st.dataframe(
         pd.DataFrame(
             {

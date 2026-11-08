@@ -1,0 +1,9 @@
+# Tema terang dengan warna bawaan Streamlit. Menu sidebar bergaya kartu diatur di app/style.css,
+# dan CSS itu mengandaikan tema terang, jadi mode gelap dimatikan.
+[theme]
+base = "light"
+primaryColor = "#ff4b4b"
+baseRadius = "medium"
+
+[theme.sidebar]
+backgroundColor = "#f0f2f6"

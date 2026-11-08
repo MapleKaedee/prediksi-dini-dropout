@@ -1,5 +1,6 @@
 """Halaman Prediksi (APP-30 sampai APP-36). Satu-satunya halaman yang menghitung skor secara langsung."""
 
+import charts
 import core
 import labels
 import loaders
@@ -16,15 +17,18 @@ st.markdown(
     "jadi skor risiko bukan peluang terkalibrasi."
 )
 
-left, middle, right = st.columns(3)
-stage = left.radio("Tahap", core.STAGES, index=1, format_func=labels.STAGES.get, key="pred_stage")
-financial = middle.toggle("Pakai atribut keuangan", value=True, key="pred_financial")
-source = right.selectbox(
-    "Sumber isian",
-    [GENERAL, *rows.index],
-    format_func=lambda option: "Nilai umum" if option == GENERAL else f"Mahasiswa data uji, row_id {option}",
-    key="pred_source",
-)
+with st.container(border=True):
+    left, middle, right = st.columns([6, 3, 4], vertical_alignment="center")
+    stage = left.segmented_control(
+        "Tahap", core.STAGES, default="T2", required=True, format_func=labels.STAGES.get, key="pred_stage"
+    )
+    financial = middle.toggle("Pakai atribut keuangan", value=True, key="pred_financial")
+    source = right.selectbox(
+        "Sumber isian",
+        [GENERAL, *rows.index],
+        format_func=lambda option: "Nilai umum" if option == GENERAL else f"Mahasiswa data uji, row_id {option}",
+        key="pred_source",
+    )
 
 model_id = core.model_id(stage, financial)
 model = loaders.model(model_id)
@@ -45,7 +49,8 @@ sensitive = [labels.name(attribute) for attribute in shown if attribute in core.
 if sensitive:
     st.info(
         f"Form memuat atribut sensitif: {', '.join(sensitive)}. Penggunaannya perlu diawasi, "
-        "dan atribut ini tidak boleh menjadi dasar perlakuan yang merugikan mahasiswa."
+        "dan atribut ini tidak boleh menjadi dasar perlakuan yang merugikan mahasiswa.",
+        icon=":material/shield_person:",
     )
 
 values = {}
@@ -94,26 +99,28 @@ if submitted:
 
     risk, top = core.score_and_explain(model, loaders.explainer(model_id), row)
     flagged = risk >= core.THRESHOLD
-    score, status = st.columns(2)
-    score.metric("Skor risiko", f"{risk:.3f}")
-    status.metric("Status", "Perlu ditinjau" if flagged else "Tidak ditandai")
-    st.caption(f'Mahasiswa ditandai "Perlu ditinjau" jika skor risiko ≥ {core.THRESHOLD}.')
-
     unchanged = source != GENERAL and all(values[a] == base[a].iloc[0] for a in shown)
-    if unchanged:
-        st.markdown(f"Status asli mahasiswa ini pada data historis: **{base['Target'].iloc[0]}**.")
+    factors = pd.DataFrame(
+        {
+            "Atribut": [labels.name(attribute) for attribute, _ in top],
+            "Nilai input": [labels.value_text(attribute, row[attribute].iloc[0]) for attribute, _ in top],
+            "Kontribusi SHAP": [contribution for _, contribution in top],
+            "Arah": [labels.direction(contribution) for _, contribution in top],
+        }
+    )
 
-    st.subheader("Lima atribut dengan pengaruh terbesar")
+    st.header("Hasil")
+    summary, chart = st.columns([1, 2], gap="large")
+    with summary:
+        st.metric("Skor risiko", f"{risk:.3f}", border=True)
+        st.metric("Status", "Perlu ditinjau" if flagged else "Tidak ditandai", border=True)
+        st.caption(f'Mahasiswa ditandai "Perlu ditinjau" jika skor risiko ≥ {core.THRESHOLD}.')
+        if unchanged:
+            st.markdown(f"Status asli mahasiswa ini pada data historis: **{base['Target'].iloc[0]}**.")
+    with chart:
+        st.markdown("**Lima atribut dengan pengaruh terbesar**")
+        st.altair_chart(charts.bars(factors, "Atribut", "Kontribusi SHAP", color="Arah", colors=charts.RISK_COLORS))
     st.dataframe(
-        pd.DataFrame(
-            {
-                "Atribut": [labels.name(attribute) for attribute, _ in top],
-                "Nilai input": [labels.value_text(attribute, row[attribute].iloc[0]) for attribute, _ in top],
-                "Kontribusi SHAP": [contribution for _, contribution in top],
-                "Arah": [labels.direction(contribution) for _, contribution in top],
-            }
-        ),
-        hide_index=True,
-        column_config={"Kontribusi SHAP": st.column_config.NumberColumn(format="%+.4f")},
+        factors, hide_index=True, column_config={"Kontribusi SHAP": st.column_config.NumberColumn(format="%+.4f")}
     )
     st.caption("Kontribusi SHAP menunjukkan pola yang dipakai model, bukan sebab mahasiswa keluar.")

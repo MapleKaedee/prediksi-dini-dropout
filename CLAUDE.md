@@ -62,7 +62,8 @@ Alurnya satu arah: `data/data.csv` diproses `notebooks/dropout_experiments.ipynb
 ## Aturan Aplikasi
 
 - Keluaran memakai "skor risiko", "Perlu ditinjau", dan "Tidak ditandai". Model memakai bobot kelas, jadi skornya bukan peluang terkalibrasi, dan aplikasi tidak boleh menulis "akan dropout".
-- Pakai tema dan grafik bawaan Streamlit, tanpa pustaka grafik tambahan.
+- Grafik memakai perintah bawaan Streamlit, tanpa pustaka grafik tambahan. `st.altair_chart` dipakai untuk batang berlabel panjang (`app/charts.py`), karena Altair sudah ikut terpasang bersama Streamlit.
+- Tampilan mengikuti referensi pilihan pemilik (8 November 2026): grid dua kolom, kartu metrik, dan menu sidebar bergaya kartu. Warna diatur di `.streamlit/config.toml`, sedangkan `app/style.css` hanya untuk menu sidebar. Selektor CSS-nya terikat pada Streamlit 1.62.
 - AI Studio, latih ulang dari antarmuka, unggah file, dan hosting publik berada di luar lingkup (PRD bagian 3). Tanpa AI Studio dan demo hanya lokal adalah keputusan final pemilik.
 - `joblib.load` dapat menjalankan kode, jadi hanya dipakai untuk `artifacts/models/` hasil notebook sendiri.
 
