@@ -28,6 +28,19 @@
     let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
+      # Menu sidebar aplikasi. Tidak ada di nixpkgs, jadi dibangun dari wheel PyPI yang sudah memuat frontend-nya.
+      streamlit-option-menu = pkgs.python3Packages.buildPythonPackage rec {
+        pname = "streamlit_option_menu";
+        version = "0.4.0";
+        format = "wheel";
+        src = pkgs.python3Packages.fetchPypi {
+          inherit pname version format;
+          dist = "py3";
+          python = "py3";
+          hash = "sha256-pV/HVUBHtts3FZWvIYLkNbiixxXuYSToVDaFvUZwsH4=";
+        };
+        dependencies = [ pkgs.python3Packages.streamlit ];
+      };
       python = pkgs.python3.withPackages (
         ps: with ps; [
           joblib
@@ -38,6 +51,7 @@
           scipy
           shap
           streamlit
+          streamlit-option-menu
           xgboost
           ipykernel
           jupyterlab
