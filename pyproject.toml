@@ -1,5 +1,10 @@
 [tool.pytest.ini_options]
 pythonpath = ["app"]
+# Peringatan dari joblib dan shap di numpy 2.5, bukan dari kode proyek.
+filterwarnings = [
+  "ignore:Setting the shape on a NumPy array:DeprecationWarning",
+  "ignore::PendingDeprecationWarning:shap",
+]
 
 [tool.ruff]
 line-length = 120

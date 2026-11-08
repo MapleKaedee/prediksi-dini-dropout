@@ -6,7 +6,9 @@ Hasilnya menunjukkan pola prediktif, bukan hubungan sebab akibat. Data berasal d
 
 ## Status
 
-`notebooks/dropout_experiments.ipynb` saat ini mencakup pemeriksaan data, pengeluaran `Course` 171, pembagian data, eksplorasi pada data latih, encoder, 24 model skenario A, B, C, dan D beserta metriknya pada data uji, bootstrap berpasangan, SHAP, jawaban rumusan masalah, dan ekspor artefak. Rilis artefak final dan aplikasi Streamlit menyusul. Langkah mengunduh artefak dan menjalankan aplikasi akan ditambahkan di sini setelah keduanya tersedia.
+`notebooks/dropout_experiments.ipynb` mencakup pemeriksaan data, pengeluaran `Course` 171, pembagian data, eksplorasi pada data latih, encoder, 24 model skenario A, B, C, dan D beserta metriknya pada data uji, bootstrap berpasangan, SHAP, jawaban rumusan masalah, dan ekspor artefak. Artefak final dari jalan di Kaggle tersedia di GitHub Release `artifacts-v1`.
+
+Aplikasi Streamlit di `app/` membaca artefak itu dan memiliki empat halaman: Dataset, Model, Prediksi, dan Daftar Prioritas. Aplikasi tidak melatih model, dan hanya halaman Prediksi yang menghitung skor secara langsung.
 
 ## Menjalankan dari clone bersih
 
@@ -16,13 +18,26 @@ Langkah ini membutuhkan Nix dengan fitur `nix-command` dan `flakes`. Rincian lin
 git clone https://github.com/MapleKaedee/prediksi-dini-dropout.git
 cd prediksi-dini-dropout
 nix develop
+curl -L -o artifacts.zip https://github.com/MapleKaedee/prediksi-dini-dropout/releases/download/artifacts-v1/artifacts.zip
+unzip -q artifacts.zip -d artifacts
+run-tests
+app
+```
+
+`app` membuka aplikasi di `http://127.0.0.1:8501`, hanya dari laptop sendiri. Aplikasi menolak berjalan jika artefak tidak lengkap, atau jika versi `scikit-learn` berbeda dari versi saat model dibuat, jadi jalankan dari shell Nix proyek.
+
+## Menjalankan ulang eksperimen
+
+`data/` hanya dibutuhkan untuk menjalankan ulang notebook.
+
+```sh
 mkdir -p data
 curl -L -o data/uci.zip 'https://archive.ics.uci.edu/static/public/697/predict+students+dropout+and+academic+success.zip'
 unzip -p data/uci.zip data.csv > data/data.csv
 run-notebook
 ```
 
-`run-notebook` menimpa keluaran notebook, lalu menulis hasilnya ke `artifacts/` dan `artifacts.zip`, dalam waktu sekitar 9 menit pada laptop 16 thread. Notebook berhenti dengan pesan jelas jika hash `data.csv` berbeda.
+`run-notebook` menimpa keluaran notebook, lalu menulis hasilnya ke `artifacts/` dan `artifacts.zip`, dalam waktu sekitar 9 menit pada laptop 16 thread. Notebook berhenti dengan pesan jelas jika hash `data.csv` berbeda. Artefak hasil laptop dapat berbeda sedikit dari Release pada model XGBoost, jadi angka di laporan mengikuti Release.
 
 ## Dataset
 
